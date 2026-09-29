@@ -12,7 +12,6 @@ import { profile, settings } from './routes/settings.js';
 
 const isProd = env.NODE_ENV === 'production';
 
-/** Trim, drop empties/trailing slashes, normalise to a bare origin and de-duplicate. Fails fast on bad config. */
 function parseOrigins(raw: string): Set<string> {
   const out = new Set<string>();
   for (const part of raw.split(',')) {
@@ -68,3 +67,5 @@ app.use('/api/payments', payments);
 app.use('/api/admin', adminRouter);
 app.use(notFound);
 app.use(errorHandler);
+
+export default app;
