@@ -1,0 +1,52 @@
+/* ScrollStack — window-scroll mode (use with useWindowScroll={true}) */
+
+.scroll-stack-scroller {
+  position: relative;
+  width: 100%;
+  /* No inner scrolling: the page itself scrolls */
+  overflow: visible;
+}
+
+.scroll-stack-inner {
+  position: relative;
+  padding: 1rem 0 25vh;
+}
+
+/* Keep visual styling (bg, border, radius, padding) in Tailwind via itemClassName.
+   Only transform-related basics live here so nothing conflicts. */
+.scroll-stack-card {
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  transform-origin: top center;
+  will-change: transform, filter;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+
+/* Marks where the last card is released. margin-top = how long the full stack stays pinned. */
+.scroll-stack-end {
+  width: 100%;
+  height: 1px;
+  margin-top: 20vh;
+}
+
+/* Recommended Lenis base styles */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-stack-card {
+    will-change: auto;
+  }
+}

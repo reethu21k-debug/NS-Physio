@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Activity, ArrowRight, Dumbbell, HeartPulse, Move, Smile, Sparkles } from 'lucide-react';
+import ScrollStack, { ScrollStackItem } from '../../components/ScrollStack';
 
 const WHY = [
   { icon: HeartPulse, t: 'Pain Relief', d: 'Care focused on helping you feel more comfortable.' },
@@ -128,10 +129,19 @@ export default function Home() {
         </div>
       </section>
 
-      {/* WHY CHOOSE US SECTION */}
-      <section className="relative z-10 py-20 bg-white border-y border-slate-100" aria-labelledby="why-h">
-        <div className="container-x">
-          <div className="mb-14 text-center">
+      {/* WHY CHOOSE US SECTION — Premium White Glass Stack */}
+      <section className="relative z-10 bg-white pt-20 border-y border-slate-100" aria-labelledby="why-h">
+        
+        {/* INCREASED COLOR OPACITY behind the glass so the frosted effect has high-contrast elements to blur */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+          <div className="absolute -left-32 top-[12%] h-[420px] w-[420px] rounded-full bg-gold/25 blur-[90px]" />
+          <div className="absolute -right-40 top-[38%] h-[480px] w-[480px] rounded-full bg-blue-500/20 blur-[100px]" />
+          <div className="absolute -left-24 top-[66%] h-[400px] w-[400px] rounded-full bg-gold/25 blur-[90px]" />
+          <div className="absolute -right-24 bottom-[4%] h-[360px] w-[360px] rounded-full bg-blue-500/20 blur-[100px]" />
+        </div>
+
+        <div className="container-x relative">
+          <div className="mb-10 text-center">
             <h2 id="why-h" className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
               Why Choose Us
             </h2>
@@ -141,21 +151,50 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
-            {WHY.map(({ icon: Icon, t, d }) => (
-              <div 
-                key={t} 
-                className="group relative flex flex-col items-center rounded-2xl border border-slate-100 bg-white p-6 text-center shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all duration-300 hover:border-gold/20 hover:shadow-[0_10px_30px_rgba(217,167,46,0.08)] hover:-translate-y-1"
-              >
-                {/* Clean icon backdrop */}
-                <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-slate-50 transition-all duration-300 group-hover:scale-110 group-hover:bg-gold/10">
-                  <Icon className="h-7 w-7 text-gold transition-colors duration-300 group-hover:text-gold-dark" aria-hidden />
-                </div>
-                
-                <h3 className="mt-5 font-sans text-lg font-bold text-slate-900">{t}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-slate-500">{d}</p>
-              </div>
-            ))}
+          <div className="mx-auto max-w-3xl">
+            <ScrollStack
+              useWindowScroll
+              itemDistance={40}
+              itemScale={0.03}
+              itemStackDistance={28}
+              stackPosition="22%"
+              scaleEndPosition="12%"
+              baseScale={0.86}
+            >
+              {WHY.map(({ icon: Icon, t, d }) => (
+                <ScrollStackItem
+                  key={t}
+                  // Heavily upgraded classes: bg-white/70 for better visibility, super dark crisp shadows, saturated backdrop blur.
+                  itemClassName="relative h-48 w-full overflow-hidden rounded-[2.5rem] border border-white bg-white/70 shadow-[0_24px_48px_-12px_rgba(15,23,42,0.15),0_4px_12px_-4px_rgba(15,23,42,0.08),inset_0_1px_1px_rgba(255,255,255,1)] ring-1 ring-slate-900/[0.04] backdrop-blur-[30px] backdrop-saturate-150 transform-gpu sm:h-56"
+                >
+                  {/* Premium Glass Glare Effects */}
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/90 via-white/30 to-transparent" />
+                  
+                  {/* Clean Etched Watermark */}
+                  <Icon
+                    className="pointer-events-none absolute -bottom-10 -right-8 h-48 w-48 text-slate-900/[0.03] sm:-bottom-12 sm:-right-8 sm:h-60 sm:w-60"
+                    strokeWidth={1}
+                    aria-hidden
+                  />
+
+                  <div className="relative flex h-full items-center gap-6 px-6 sm:gap-10 sm:px-12">
+                    {/* Refined Frosted Icon Box */}
+                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-white bg-white/90 shadow-[0_12px_24px_-8px_rgba(15,23,42,0.12),inset_0_2px_4px_rgba(255,255,255,1)] backdrop-blur-md sm:h-20 sm:w-20 sm:rounded-[1.25rem]">
+                      <Icon className="h-7 w-7 text-gold sm:h-9 sm:w-9" strokeWidth={1.5} aria-hidden />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-display text-2xl font-bold tracking-tight text-slate-800 sm:text-3xl">
+                        {t}
+                      </h3>
+                      <p className="mt-2 max-w-sm text-sm leading-relaxed text-slate-500 sm:text-base sm:leading-relaxed">
+                        {d}
+                      </p>
+                    </div>
+                  </div>
+                </ScrollStackItem>
+              ))}
+            </ScrollStack>
           </div>
         </div>
       </section>
