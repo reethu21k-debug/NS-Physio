@@ -36,10 +36,19 @@ const allowedOrigins = parseOrigins(env.CLIENT_URL ?? '');
 
 export const app = express();
 if (isProd) app.set('trust proxy', 1);
-app.use(helmet());
+
+// Helmet's default Cross-Origin-Resource-Policy is "same-origin", which blocks the separately hosted client from reading API responses.
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+
 app.use(cors({
   // No Origin header (curl, server-to-server) is not a browser CORS request; every browser origin must match exactly.
-  origin: (origin, cb) => cb(null, !origin || allowedOrigins.has(origin)),
+  origin: (origin, cb) => {
+    if (!origin || allowedOrigins.has(origin)) return cb(null, true);
+    console.warn(`[cors] blocked origin: ${origin} | allowed: ${[...allowedOrigins].join(', ')}`);
+    return cb(null, false);
+  },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: false, // API uses Bearer tokens, not cookies
   maxAge: 600,
 }));
