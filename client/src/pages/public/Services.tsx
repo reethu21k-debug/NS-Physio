@@ -7,17 +7,25 @@ import { EmptyState, ErrorState, Spinner } from '../../components/ui';
 
 // Custom Enhanced Service Card
 function ModernServiceCard({ service }: { service: Service }) {
-  // Support variations in API service model properties gracefully
-  const title = service.name || service.title || 'Therapeutic Service';
-  const description = service.description || 'Professional clinical care tailored to your rehabilitation and health goals.';
-  const price = service.price ? (typeof service.price === 'number' ? `₹${service.price}` : service.price) : 'Consultation';
-  const duration = service.duration_minutes ? `${service.duration_minutes} mins` : service.duration || '30-45 mins';
-  const image = service.image || null;
+  const title = service.name || 'Therapeutic Service';
+  const description =
+    service.description || 'Professional clinical care tailored to your rehabilitation and health goals.';
+  const duration = service.duration_minutes ? `${service.duration_minutes} mins` : '30-45 mins';
+  const image = service.image_url || null;
+
+  let price: string;
+  if (service.pricing_type === 'contact' || service.price == null) {
+    price = 'Contact us';
+  } else if (service.pricing_type === 'starting_from') {
+    price = `From ₹${service.price}`;
+  } else {
+    price = `₹${service.price}`;
+  }
 
   return (
     <div className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)] backdrop-blur-sm transition-all duration-300 hover:border-gold/40 hover:shadow-[0_12px_32px_rgba(217,167,46,0.12)] hover:-translate-y-1">
       <div>
-        {/* Optional Image Header if provided by backend */}
+        {/* Optional image header */}
         {image && (
           <div className="mb-5 -mx-6 -mt-6 aspect-[16/9] overflow-hidden bg-slate-100">
             <img
@@ -47,11 +55,9 @@ function ModernServiceCard({ service }: { service: Service }) {
         </h3>
 
         {/* Service Description */}
-        <p className="mt-2 text-sm leading-relaxed text-slate-500 line-clamp-3">
-          {description}
-        </p>
+        <p className="mt-2 text-sm leading-relaxed text-slate-500 line-clamp-3">{description}</p>
 
-        {/* Included Benefits List (if available or standard feature set) */}
+        {/* Included Benefits */}
         <ul className="mt-4 space-y-2 border-t border-slate-100 pt-4">
           <li className="flex items-center gap-2 text-xs text-slate-600">
             <CheckCircle2 className="h-3.5 w-3.5 text-gold" />
@@ -91,7 +97,6 @@ export default function Services() {
       <section className="relative border-b border-slate-100 bg-white py-12 md:py-16 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
         <div className="container-x">
           <div className="max-w-3xl space-y-4">
-            {/* Header Glass Badge */}
             <div className="inline-flex items-center gap-2 rounded-full border border-gold/20 bg-gold/5 px-4 py-1.5 backdrop-blur-md shadow-sm">
               <Sparkles className="h-3.5 w-3.5 text-gold-dark" />
               <span className="text-xs font-bold uppercase tracking-[0.25em] text-gold-dark">
@@ -102,7 +107,7 @@ export default function Services() {
             <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl">
               Our Clinical Services
             </h1>
-            
+
             <p className="text-base text-slate-600 sm:text-lg leading-relaxed">
               Explore our range of professional physiotherapy, rehabilitation, and pain-management therapies tailored to your recovery needs.
             </p>
