@@ -3,16 +3,26 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { AlertTriangle, ArrowRight, Eye, EyeOff, Loader2, Lock, Mail, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Eye, EyeOff, Loader2, Lock, ShieldCheck, User } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { api, errMsg } from '../../lib/api';
+import { normalizeIndianPhone } from '../../lib/phone';
 import { useAuth } from '../../lib/auth';
 import { useToast } from '../../lib/toast';
 import AuthShell from './AuthShell';
 
-const schema = z.object({
-  email: z.string().trim().min(1, 'Enter your email').email('Enter a valid email'),
-  password: z.string().min(1, 'Enter your password'),
-});
+const schema = z
+  .object({
+    identifier: z.string().trim().min(1, 'Enter your email or mobile number'),
+    password: z.string().min(1, 'Enter your password'),
+  })
+  .superRefine((v, ctx) => {
+    const valid = v.identifier.includes('@')
+      ? z.string().email().safeParse(v.identifier).success
+      : normalizeIndianPhone(v.identifier) !== null;
+    if (!valid)
+      ctx.addIssue({ code: 'custom', path: ['identifier'], message: 'Enter a valid email or 10-digit mobile number' });
+  });
 type F = z.infer<typeof schema>;
 
 /* Shared input styling: frosted field, gold focus ring, red when invalid */
@@ -52,12 +62,27 @@ export default function Login() {
   if (session && profile) return <Navigate to={from ?? (profile.role === 'admin' ? '/admin' : '/dashboard')} replace />;
 
   const onSubmit = async (v: F) => {
-    const { error } = await supabase.auth.signInWithPassword(v);
-    if (error) {
-      const msg = error.message.toLowerCase();
-      if (msg.includes('invalid login credentials')) return toast.error('Incorrect email or password.');
-      if (msg.includes('email not confirmed')) return toast.error('Please verify your email before signing in.');
-      return toast.error('Unable to sign in. Please try again.');
+    if (v.identifier.includes('@')) {
+      // Email + password (unchanged behaviour)
+      const { error } = await supabase.auth.signInWithPassword({ email: v.identifier, password: v.password });
+      if (error) {
+        const msg = error.message.toLowerCase();
+        if (msg.includes('invalid login credentials')) return toast.error('Incorrect email/mobile number or password.');
+        if (msg.includes('email not confirmed')) return toast.error('Please verify your email before signing in.');
+        return toast.error('Unable to sign in. Please try again.');
+      }
+    } else {
+      // Mobile number + password: the server resolves the number to the account and verifies the password.
+      try {
+        const { session: s } = await api<{ session: { access_token: string; refresh_token: string } }>('/auth/login-phone', {
+          method: 'POST',
+          body: { phone: v.identifier, password: v.password },
+        });
+        const { error } = await supabase.auth.setSession(s);
+        if (error) return toast.error('Unable to sign in. Please try again.');
+      } catch (e) {
+        return toast.error(errMsg(e));
+      }
     }
     nav(from ?? '/dashboard', { replace: true });
   };
@@ -65,30 +90,33 @@ export default function Login() {
   return (
     <AuthShell title="Welcome back" subtitle="Sign in to book and manage your appointments.">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
-        {/* EMAIL */}
+        {/* EMAIL OR MOBILE */}
         <div>
-          <label htmlFor="login-email" className={labelCls}>
-            Email
+          <label htmlFor="login-identifier" className={labelCls}>
+            Email or mobile number
           </label>
           <div className="group relative mt-1.5">
-            <Mail
+            <User
               aria-hidden
               className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-400 transition-colors duration-300 group-focus-within:text-gold-dark"
             />
             <input
-              id="login-email"
-              type="email"
+              id="login-identifier"
+              type="text"
               inputMode="email"
-              autoComplete="email"
+              autoComplete="username"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               autoFocus
-              placeholder="you@example.com"
-              aria-invalid={!!errors.email}
-              aria-describedby={errors.email ? 'login-email-err' : undefined}
-              className={`${inputCls(!!errors.email)} pr-4`}
-              {...register('email')}
+              placeholder="you@example.com or 98765 43210"
+              aria-invalid={!!errors.identifier}
+              aria-describedby={errors.identifier ? 'login-identifier-err' : undefined}
+              className={`${inputCls(!!errors.identifier)} pr-4`}
+              {...register('identifier')}
             />
           </div>
-          <FieldError id="login-email-err" message={errors.email?.message} />
+          <FieldError id="login-identifier-err" message={errors.identifier?.message} />
         </div>
 
         {/* PASSWORD */}

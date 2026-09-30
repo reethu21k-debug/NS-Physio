@@ -5,6 +5,8 @@ import { z } from 'zod';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowRight, Check, Eye, EyeOff, Loader2, Lock, Mail, MailCheck, Phone, ShieldCheck, User } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { api } from '../../lib/api';
+import { normalizeIndianPhone } from '../../lib/phone';
 import { useToast } from '../../lib/toast';
 import AuthShell from './AuthShell';
 
@@ -12,7 +14,10 @@ const schema = z
   .object({
     full_name: z.string().trim().min(2, 'Enter your full name').max(100),
     email: z.string().trim().min(1, 'Enter your email').email('Enter a valid email'),
-    phone: z.string().trim().regex(/^[+\d][\d\s-]{6,18}$/, 'Enter a valid phone number'),
+    phone: z
+      .string()
+      .trim()
+      .refine((v) => normalizeIndianPhone(v) !== null, 'Enter a valid 10-digit mobile number'),
     password: z.string().min(8, 'Use at least 8 characters'),
     confirm: z.string(),
   })
@@ -138,6 +143,7 @@ export default function Register() {
     register,
     handleSubmit,
     watch,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<F>({ resolver: zodResolver(schema) });
   const toast = useToast();
@@ -153,16 +159,27 @@ export default function Register() {
   const matches = confirm.length > 0 && confirm === pw && !errors.confirm;
 
   const onSubmit = async (v: F) => {
+    // Stored as +91XXXXXXXXXX so the same number can be used to sign in later, in any typed format.
+    const phone = normalizeIndianPhone(v.phone)!;
+
+    // Friendly duplicate check (the database unique index is still the final guard).
+    try {
+      const { available } = await api<{ available: boolean }>('/auth/phone-available', { method: 'POST', body: { phone } });
+      if (!available) return setError('phone', { message: 'This mobile number is already registered.' });
+    } catch {
+      /* server unreachable or rate-limited: continue, sign-up itself will still be protected by the unique index */
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email: v.email,
       password: v.password,
-      options: { data: { full_name: v.full_name, phone: v.phone } },
+      options: { data: { full_name: v.full_name, phone } },
     });
     if (error)
       return toast.error(
         error.message.toLowerCase().includes('registered')
           ? 'An account with this email already exists.'
-          : 'Unable to create your account. Please try again.',
+          : 'Unable to create your account. This email or mobile number may already be registered.',
       );
     if (data.session) {
       toast.success('Account created.');
@@ -244,7 +261,7 @@ export default function Register() {
 
         <Field
           id="reg-phone"
-          label="Phone number"
+          label="Mobile number"
           icon={<Phone />}
           type="tel"
           inputMode="tel"
