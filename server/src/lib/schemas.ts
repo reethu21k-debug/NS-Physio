@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { normalizeIndianPhone } from './phone.js';
 
 export const uuid = z.string().uuid();
 
@@ -106,7 +107,10 @@ export const usersQuery = z.object({
   page_size: z.coerce.number().int().min(1).max(1000).default(1000),
 });
 
+/** Phone is validated as an Indian mobile number and stored normalised (+91XXXXXXXXXX). */
 export const profileSchema = z.object({
   full_name: z.string().trim().min(2).max(100),
-  phone: z.string().trim().regex(/^[+\d][\d\s\-]{6,18}$/, 'Invalid phone number'),
+  phone: z.string().trim()
+    .refine((v) => normalizeIndianPhone(v) !== null, 'Enter a valid 10-digit Indian mobile number')
+    .transform((v) => normalizeIndianPhone(v)!),
 }).strict();

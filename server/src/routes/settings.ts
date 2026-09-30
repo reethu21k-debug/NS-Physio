@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { supabase } from '../lib/supabase.js';
 import { requireAdmin, requireAuth } from '../middleware/auth.js';
-import { fromDbError } from '../lib/errors.js';
+import { HttpError, fromDbError } from '../lib/errors.js';
 import { ok } from '../middleware/error.js';
 import { profileSchema, settingsSchema } from '../lib/schemas.js';
 import { audit, getSettings } from '../lib/helpers.js';
@@ -53,7 +53,12 @@ profile.get('/', async (req, res) => {
   ok(res, data);
 });
 profile.patch('/', async (req, res) => {
-  const v = profileSchema.parse(req.body);
+  const v = profileSchema.parse(req.body); // v.phone is already normalised to +91XXXXXXXXXX
+  // A mobile number identifies exactly one account (it is used to sign in). The DB unique index is the final guard.
+  const { data: clash, error: clashErr } = await supabase.from('profiles').select('id')
+    .eq('phone_normalized', v.phone).neq('id', req.user!.id).limit(1);
+  if (clashErr) throw fromDbError(clashErr);
+  if (clash?.length) throw new HttpError(409, 'This mobile number is already registered to another account.');
   const { data, error } = await supabase.from('profiles').update(v).eq('id', req.user!.id).select('id,full_name,email,phone,role').single();
   if (error) throw fromDbError(error);
   ok(res, data);

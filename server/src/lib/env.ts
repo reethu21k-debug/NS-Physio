@@ -7,6 +7,8 @@ const schema = z.object({
   CLIENT_URL: z.string().default('http://localhost:5173'),
   SUPABASE_URL: z.string().url(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(20),
+  // Optional: public anon key, used only to verify passwords for mobile-number login (falls back to the service key).
+  SUPABASE_ANON_KEY: z.string().min(20).optional(),
   CLOUDINARY_CLOUD_NAME: z.string().min(1),
   CLOUDINARY_API_KEY: z.string().min(1),
   CLOUDINARY_API_SECRET: z.string().min(1),

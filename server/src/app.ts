@@ -11,6 +11,7 @@ import { appointments } from './routes/appointments.js';
 import { payments } from './routes/payments.js';
 import { adminRouter } from './routes/admin.js';
 import { profile, settings } from './routes/settings.js';
+import { authRouter } from './routes/auth.js';
 
 const isProd = env.NODE_ENV === 'production';
 
@@ -187,6 +188,24 @@ app.use(
   })
 );
 
+/**
+ * Mobile-number login + phone availability check.
+ * Strict limit to slow down password guessing.
+ */
+app.use(
+  '/api/auth',
+  rateLimit({
+    windowMs: 15 * 60_000,
+    limit: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      success: false,
+      message: 'Too many attempts. Please wait a few minutes and try again.',
+    },
+  })
+);
+
 app.use(
   '/api/appointments',
   rateLimit({
@@ -269,6 +288,8 @@ app.get('/api/health', (_req, res) => {
  * API ROUTES
  * ---------------------------------------------------------
  */
+
+app.use('/api/auth', authRouter);
 
 app.use('/api/services', services);
 
